@@ -34,6 +34,19 @@
       "Default": "0.0.0.0/0",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+    
+    "GithubUrl" : {
+      "Description": "Github Url, eg. https://github.com/<username>/<repo>",
+      "Type": "String"
+    },
+    "GithubLogin" : {
+      "Description" : "Github Login",
+      "Type": "String"    
+    },
+    "GithubPassword" : {
+      "Description" : "Github Password",
+      "Type": "String"    
     }
   },
 
@@ -214,6 +227,14 @@
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Metadata" : {
         "Comment" : "Install a simple application",
+        "AWS::CloudFormation::Authentication": {
+          "GithubCredentials": {
+            "type": "basic",
+            "username": { "Ref": "GithubLogin" },
+            "password": { "Ref": "GithubPassword" },
+            "uris": ["github.com"]
+          }
+        },
         "AWS::CloudFormation::Init" : {
           "config" : {
             "packages" : {
@@ -222,18 +243,18 @@
                 "git": []
               }
             },
-
+            
+            "sources" : {
+              "/var/www" : { "Fn::Join" : ["", [
+                { "Ref": "GithubUrl" },
+                "/tarball/master"
+              ]]},
+              "mode"    : "000644",
+              "owner"   : "root",
+              "group"   : "root"
+            },
+            
             "files" : {
-              "/var/www/html/index.html" : {
-                "content" : { "Fn::Join" : ["\n", [
-                  "<img src=\"", {"Fn::FindInMap" : ["Region2Examples", {"Ref" : "AWS::Region"}, "Examples"]}, "/cloudformation_graphic.png\" alt=\"AWS CloudFormation Logo\"/>",
-                  "<h1>Congratulations, you have successfully launched the AWS CloudFormation sample.</h1>"
-                ]]},
-                "mode"    : "000644",
-                "owner"   : "root",
-                "group"   : "root"
-              },
-
               "/etc/cfn/cfn-hup.conf" : {
                 "content" : { "Fn::Join" : ["", [
                   "[main]\n",
