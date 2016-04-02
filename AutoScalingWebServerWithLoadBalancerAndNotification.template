@@ -248,10 +248,7 @@
               "/var/www" : { "Fn::Join" : ["", [
                 { "Ref": "GithubUrl" },
                 "/tarball/master"
-              ]]},
-              "mode"    : "000644",
-              "owner"   : "root",
-              "group"   : "root"
+              ]]}
             },
             
             "files" : {
@@ -300,6 +297,7 @@
              "#!/bin/bash -xe\n",
              
              "apt-get update\n",
+             "apt-get -y upgrade\n",
              "apt-get -y install python-pip\n",
              "pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
              "cp /usr/local/init/ubuntu/cfn-hup /etc/init.d/cfn-hup \n",
