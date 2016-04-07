@@ -1,7 +1,7 @@
 {
   "AWSTemplateFormatVersion" : "2010-09-09",
 
-  "Description" : "Create an website running on Apache web server in a single-az, load-balanced and auto-scaled based on the CPU utilization of the web server instances. Notifications will be sent to the operator email address on scaling events. The instances are load balanced with a simple health check against the default web page. Credits: based on AWS sample template AutoScalingMultiAZWithNotifications.",
+  "Description" : "Create an website running on the 'official' Ubuntu 14.04 AMI incl. Apache web server in a single-az, load-balanced and auto-scaled based on the CPU utilization of the web server instances. Notifications will be sent to the operator email address on scaling events. The instances are load balanced with a simple health check against the default web page. Web server content is downloaded from Github using the credentials entered by user. Credits: based on AWS sample template AutoScalingMultiAZWithNotifications.",
 
   "Parameters" : {
     "InstanceType" : {
@@ -34,19 +34,6 @@
       "Default": "0.0.0.0/0",
       "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
       "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
-    },
-    
-    "GithubUrl" : {
-      "Description": "Github Url, eg. https://github.com/<username>/<repo>",
-      "Type": "String"
-    },
-    "GithubLogin" : {
-      "Description" : "Github Login",
-      "Type": "String"    
-    },
-    "GithubPassword" : {
-      "Description" : "Github Password",
-      "Type": "String"    
     }
   },
 
@@ -227,14 +214,6 @@
       "Type" : "AWS::AutoScaling::LaunchConfiguration",
       "Metadata" : {
         "Comment" : "Install a simple application",
-        "AWS::CloudFormation::Authentication": {
-          "GithubCredentials": {
-            "type": "basic",
-            "username": { "Ref": "GithubLogin" },
-            "password": { "Ref": "GithubPassword" },
-            "uris": ["github.com"]
-          }
-        },
         "AWS::CloudFormation::Init" : {
           "config" : {
             "packages" : {
@@ -242,13 +221,6 @@
                 "apache2" : [],
                 "git": []
               }
-            },
-            
-            "sources" : {
-              "/var/www" : { "Fn::Join" : ["", [
-                { "Ref": "GithubUrl" },
-                "/tarball/master"
-              ]]}
             },
             
             "files" : {
@@ -293,6 +265,7 @@
                                           { "Fn::FindInMap" : [ "AWSInstanceType2Arch", { "Ref" : "InstanceType" }, "Arch" ] } ] },
         "SecurityGroups" : [ { "Ref" : "InstanceSecurityGroup" } ],
         "InstanceType" : { "Ref" : "InstanceType" },
+        "IamInstanceProfile": "EC2_Access_CodeDeploy",
         "UserData"       : { "Fn::Base64" : { "Fn::Join" : ["", [             
              "#!/bin/bash -xe\n",
              
@@ -304,6 +277,12 @@
              "chmod +x /etc/init.d/cfn-hup \n",
              "update-rc.d cfn-hup defaults \n ",
              "service cfn-hup start \n",
+             
+             "apt-get -y install ruby2.0 \n",
+             "pip install awscli \n",
+             "cd /home/ubuntu; aws s3 cp s3://aws-codedeploy-eu-central-1/latest/install . --region eu-central-1 \n",
+             "chmod +x ./install \n",
+             "./install auto \n",
 
              "/usr/local/bin/cfn-init -v ",
              "         --stack ", { "Ref" : "AWS::StackName" },
